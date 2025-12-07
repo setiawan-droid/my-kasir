@@ -39,21 +39,23 @@
             <td>Rp {{ number_format($d->subtotal, 0, ',', '.') }}</td>
         </tr>
         @endforeach
-    </tbody>
+        <!-- Tambahkan baris Diskon & Grand Total di sini -->
+        <tr>
+            <td colspan="4" style="text-align:right">Diskon {{ $transaksi->diskon_persen }}%</td>
+            <td style="text-align:right">- Rp {{ number_format($transaksi->diskon,0,',','.') }}</td>
+        </tr>
+        <tr>
+            <td colspan="4" style="text-align:right"><b>Grand Total</b></td>
+            <td style="text-align:right"><b>Rp {{ number_format($transaksi->grand_total,0,',','.') }}</b></td>
+        </tr>
+        <tr>
+            <td colspan="4" style="text-align:right"><h3 style="text-align: right; margin-top: 10px;">
+    Total:  </h3></b></td>
+            <td style="text-align:right"><b>Rp {{ number_format($transaksi->total, 0, ',', '.') }}</b></td>
+        </tr>
+   
+ </tbody>
 </table>
-
-<h3 style="text-align: right; margin-top: 10px;">
-    Total: Rp {{ number_format($transaksi->total, 0, ',', '.') }}
-</h3>
-<tr>
-    <td>Diskon {{ $transaksi->diskon_persen }}%</td>
-    <td style="text-align:right">- Rp {{ number_format($transaksi->diskon,0,',','.') }}</td>
-</tr>
-<tr>
-    <td><b>Grand Total</b></td>
-    <td style="text-align:right"><b>Rp {{ number_format($transaksi->grand_total,0,',','.') }}</b></td>
-</tr>
-
 <br><br>
 <p style="text-align:center;">
     Terima kasih telah berbelanja 🙏

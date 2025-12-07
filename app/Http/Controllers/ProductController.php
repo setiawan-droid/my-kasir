@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Http\Controllers;
 
 use App\Models\Product;
@@ -6,60 +7,73 @@ use Illuminate\Http\Request;
 
 class ProductController extends Controller
 {
-    // daftar produk
+    /**
+     * Display a listing of the resource.
+     */
     public function index()
     {
-        $products = Product::orderBy('id','desc')->get();
+        $products = Product::all();
         return view('produk.index', compact('products'));
     }
 
-    // form tambah
+    /**
+     * Show the form for creating a new resource.
+     */
     public function create()
     {
         return view('produk.create');
     }
 
-    // simpan produk
+    /**
+     * Store a newly created resource in storage.
+     */
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'nama' => 'required|string|max:255',
+            'nama' => 'required',
             'harga' => 'required|numeric',
             'stok' => 'required|integer',
             'diskon_persen' => 'nullable|integer|min:0|max:100'
         ]);
 
-        // simpan semua field yang tervalidasi
+        // Simpan sesuai input form
         Product::create($validated);
 
-        return redirect()->route('products.index')->with('success','Produk berhasil ditambahkan');
+        return redirect()->route('products.index')->with('success', 'Produk berhasil ditambahkan');
     }
 
-    // form edit
-    public function edit($id)
+    /**
+     * Show the form for editing the specified resource.
+     */
+    public function edit(string $id)
     {
         $product = Product::findOrFail($id);
         return view('produk.edit', compact('product'));
     }
 
-    // update
-    public function update(Request $request, $id)
+    /**
+     * Update the specified resource in storage.
+     */
+    public function update(Request $request, string $id)
     {
         $validated = $request->validate([
-            'nama' => 'required|string|max:255',
+            'nama' => 'required',
             'harga' => 'required|numeric',
             'stok' => 'required|integer',
             'diskon_persen' => 'nullable|integer|min:0|max:100'
         ]);
 
-        Product::where('id',$id)->update($validated);
-        return redirect()->route('products.index')->with('success','Produk diperbarui');
+        Product::where('id', $id)->update($validated);
+
+        return redirect()->route('products.index')->with('success', 'Produk berhasil diperbarui');
     }
 
-    // hapus
-    public function destroy($id)
+    /**
+     * Remove the specified resource from storage.
+     */
+    public function destroy(string $id)
     {
         Product::destroy($id);
-        return redirect()->route('products.index')->with('success','Produk dihapus');
+        return redirect()->route('products.index')->with('success', 'Produk berhasil dihapus');
     }
 }
