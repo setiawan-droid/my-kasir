@@ -1,76 +1,94 @@
-@extends('layouts.app')
+@extends('layouts.app', ['title' => 'Kasir'])
 
 @section('content')
-<div class="container">
-    <h3>Kasir</h3>
 
-    {{-- Form pilih produk untuk keranjang --}}
-    <form action="{{ route('kasir.add') }}" method="POST">
-        @csrf
-        <div class="row">
-            <div class="col-md-6">
-                <select name="product_id" class="form-control" required>
-                    <option value="">-- Pilih Produk --</option>
-                    @foreach ($products as $product)
-                    <option value="{{ $product->id }}">
-                        {{ $product->nama }} - Rp{{ number_format($product->harga) }}
-                    </option>
-                    @endforeach
-                </select>
+{{-- Notifikasi --}}
+@if(session('success')) <div class="alert alert-success">{{ session('success') }}</div> @endif
+@if(session('error')) <div class="alert alert-danger">{{ session('error') }}</div> @endif
+
+<div class="row">
+    {{-- Daftar Produk --}}
+    <div class="col-md-7">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <b>Pilih Produk</b>
             </div>
+            <div class="card-body p-2">
+                <form action="{{ route('kasir.add') }}" method="POST">
+                    @csrf
+                    <div class="input-group mb-2">
+                        <select name="product_id" class="form-control" required>
+                            <option value="">-- Pilih Produk --</option>
+                            @foreach ($products as $p)
+                                <option value="{{ $p->id }}">{{ $p->nama }} - Rp {{ number_format($p->harga) }}</option>
+                            @endforeach
+                        </select>
+                        <input type="number" name="qty" class="form-control" value="1" min="1">
+                        <button class="btn btn-success"><i class="fas fa-plus"></i></button>
+                    </div>
+                </form>
 
-            <div class="col-md-2">
-                <input type="number" name="qty" min="1" class="form-control" placeholder="Qty" required>
-            </div>
-
-            <div class="col-md-2">
-                <button class="btn btn-primary">Tambah</button>
+                <table class="table table-striped table-sm">
+                    <thead class="bg-light">
+                        <tr>
+                            <th>Produk</th>
+                            <th>Qty</th>
+                            <th>Harga</th>
+                            <th>Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @php $total = 0; @endphp
+                        @foreach ($cart as $id => $item)
+                            @php $sub = $item['price'] * $item['qty']; $total += $sub; @endphp
+                            <tr>
+                                <td>{{ $item['name'] }}</td>
+                                <td>{{ $item['qty'] }}</td>
+                                <td>Rp {{ number_format($sub) }}</td>
+                                <td>
+                                    <form action="{{ route('kasir.remove') }}" method="POST">
+                                        @csrf
+                                        <input type="hidden" name="product_id" value="{{ $id }}">
+                                        <button class="btn btn-danger btn-sm"><i class="fas fa-trash"></i></button>
+                                    </form>
+                                </td>
+                            </tr>
+                        @endforeach
+                        <tr class="table-success">
+                            <th colspan="2">Total</th>
+                            <th colspan="2">Rp {{ number_format($total) }}</th>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
         </div>
-    </form>
-    <hr>
+    </div>
 
-    {{-- Tabel keranjang --}}
-    <h4>Keranjang Belanja</h4>
-    <table class="table table-bordered">
-        <tr>
-            <th>Produk</th>
-            <th>Qty</th>
-            <th>Harga</th>
-            <th>Subtotal</th>
-        </tr>
-        @php $total = 0; @endphp
-        @foreach ($cart as $item)
-        @php $subtotal = $item['qty'] * $item['price']; $total += $subtotal; @endphp
-        <tr>
-            <td>{{ $item['name'] }}</td>
-            <td>{{ $item['qty'] }}</td>
-            <td>Rp{{ number_format($item['price']) }}</td>
-            <td>Rp{{ number_format($subtotal) }}</td>
-        </tr>
-        @endforeach
-        <tr>
-            <th colspan="3">Total</th>
-            <th>Rp{{ number_format($total) }}</th>
-        </tr>
-    </table>
+    {{-- Pembayaran --}}
+    <div class="col-md-5">
+        <form action="{{ route('kasir.checkout') }}" method="POST">
+            @csrf
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <b>Pembayaran</b>
+                </div>
+                <div class="card-body">
+                    <label>Diskon Transaksi (%)</label>
+                    <input type="number" name="diskon_persen" class="form-control mb-2" value="0" min="0" max="100">
 
-    {{-- Form checkout --}}
-    <form action="{{ route('kasir.checkout') }}" method="POST">
-        @csrf
-        <input type="hidden" name="total" value="{{ $total }}">
-       <label>Diskon Transaksi (%)</label>
-        <input type="number" name="diskon_persen" value="0" min="0" max="100" class="form-control">
+                    <label>Bayar (Rp)</label>
+                    <input type="number" name="bayar" class="form-control mb-2" required>
 
+                    <label>Nomor WA (opsional)</label>
+                    <input type="text" name="wa" class="form-control mb-3">
 
-        <div class="mb-3">
-            <label>Bayar</label>
-            <input type="number" name="bayar" min="0" step="any" class="form-control" required>
-
-        </div>
-  
-        <button class="btn btn-success">Checkout</button>
-    </form>
-
+                    <button class="btn btn-success btn-lg w-100">
+                        <i class="fas fa-check-circle"></i> Proses Pembayaran
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
 </div>
+
 @endsection
