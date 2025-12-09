@@ -21,30 +21,19 @@ class KasirController extends Controller
         $cart = session()->get('cart', []);
         return view('kasir.index', compact('products', 'cart'));
     }
-     public function addToCart(Request $request)
-        {
-            $product = Product::findOrFail($request->product_id);
-            $cart = session()->get('cart', []);
+     public function addToCart(Request $request, CartService $cart)
+{
+    $cart->addToCart($request->product_id, $request->qty);
 
-            if (isset($cart[$product->id])) {
-                $cart[$product->id]['qty'] += $request->qty;
-            } else {
-               $diskon = $product->diskon_persen ?? 0;
-                $harga_diskon = $product->harga - ($product->harga * $diskon / 100);
+    return back()->with('success', 'Produk ditambahkan');
+}
 
-                $cart[$product->id] = [
-                    'name' => $product->nama,
-                    'price' => $harga_diskon, // harga setelah diskon
-                    'qty' => $request->qty,
-                    'diskon_persen' => $diskon
-                ];
+public function removeFromCart($id, CartService $cart)
+{
+    $cart->removeItem($id);
 
-            }
-
-            session()->put('cart', $cart);
-            return redirect()->route('kasir.index')->with('success', 'Produk ditambahkan');
-        }
-
+    return back()->with('success', 'Item dihapus');
+}
          
 
     public function histori()
@@ -72,48 +61,26 @@ class KasirController extends Controller
             $detail = TransaksiDetail::where('transaksi_id', $id)->get();
             return view('kasir.detail', compact('transaksi', 'detail'));
         }
-        public function checkout(Request $request)
-{
-    $cart = session('cart', []);
-    $total = collect($cart)->sum(fn($i) => $i['price'] * $i['qty']);
-    $bayar = $request->bayar;
-    $diskonPersen = $request->diskon_persen ?? 0;
-    $diskonNominal = $total * ($diskonPersen / 100);
-    $grandTotal = $total - $diskonNominal;
-    $kembalian = $bayar - $grandTotal;
-
-    // 1️⃣ Simpan transaksi dulu
-    $transaksi = Transaksi::create([
-        'kode_transaksi' => 'TRX-' . date('YmdHis'),
-        'total' => $total,
-        'diskon_persen' => $diskonPersen,
-        'diskon_rp' => $diskonNominal,
-        'grand_total' => $grandTotal,
-        'bayar' => $bayar,
-        'kembalian' => $kembalian,
-        'user_id' => auth()->id(),
-    ]);
-
-    // 2️⃣ Simpan detail transaksi
-    foreach ($cart as $productId => $item) {
-        TransaksiDetail::create([
-            'transaksi_id' => $transaksi->id,   // aman, sudah ada
-            'product_id'   => $productId,
-            'qty'          => $item['qty'],
-            'harga'        => $item['price'],
-            'diskon_persen'=> $item['diskon_persen'] ?? 0,
-            'subtotal'     => ($item['price'] * $item['qty'])
-        ]);
-
-        // 3️⃣ Kurangi stok produk
-        Product::where('id', $productId)->decrement('stok', $item['qty']);
+        public function checkout(Request $request, 
+    CartService $cart,
+    CheckoutService $checkout,
+    PaymentContext $payment
+) {
+    // pilih strategi
+    if ($request->payment === 'cash') {
+        $payment->setStrategy(new CashPayment());
+    } else {
+        $payment->setStrategy(new QrisPayment());
     }
 
-    // 4️⃣ Kosongkan keranjang
-    session()->forget('cart');
+    // proses pembayaran
+    $paymentResult = $payment->processPayment($cart->getTotal());
 
-    return redirect()->route('transaksi.show', $transaksi->id)
-        ->with('success', 'Checkout berhasil!');
+    // lakukan checkout transaksi
+    $trx = $checkout->checkout($paymentResult);
+
+    return redirect()->route('transaksi.show', $trx->id)
+        ->with('success', 'Checkout berhasil');
 }
 
 
