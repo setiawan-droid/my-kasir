@@ -4,6 +4,7 @@ use App\Http\Controllers\ProductController;
 use App\Http\Controllers\KasirController;
 use App\Http\Controllers\TransaksiController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\SearchController;
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -16,6 +17,10 @@ use App\Http\Controllers\DashboardController;
 Route::get('/', function() {
     return redirect()->route('kasir.index');
 });
+Route::get('/search', [SearchController::class, 'index'])->name('search.index');
+// Route untuk memproses pencarian
+Route::post('/search', [SearchController::class, 'performSearch'])->name('search.perform');
+
 // Dashboard
 Route::get('/dashboard', [DashboardController::class, 'index'])
       ->name('dashboard');
